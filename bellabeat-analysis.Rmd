@@ -1,0 +1,281 @@
+---
+title: "Bellabeat - case study"
+author: "Manpreet"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+![Bellabeat](\KS\Documents\bellabeat.png)
+#Bellabeat
+
+##Overview##
+*About Client*
+Bellabeat, a high-tech company that manufactures health-focused smart products.
+Sršen used her background as an artist to develop beautifully designed technology that informs and inspires women around
+the world. Collecting data on activity, sleep, stress, and reproductive health has allowed Bellabeat to empower women with
+knowledge about their own health and habits. Since it was founded in 2013, Bellabeat has grown rapidly and quickly
+positioned itself as a tech-driven wellness company for women.
+
+**Products**
+*Bellabeat app (analyses custormer's essentials and helps in making healthy decisons)
+*Leaf, a tracking jewellery
+*spring, a tracking bottle to measure ones's water in-take
+*Time, a tracking watch
+
+*stakeholders*
+1.Urška Sršen: Bellabeat’s cofounder and Chief Creative Officer
+
+2.Sando Mur: Mathematician and Bellabeat’s cofounder; key member of the Bellabeat executive team
+
+3.Bellabeat marketing analytics team
+
+
+##Problem_statement(ASK)
+1.What are some trends in smart device usage?
+(how well these devices fit-in and helps)
+2.How could these trends apply to Bellabeat customers?
+(beased upon the fit and finding the misfit, certain strategy should be suggested)
+3.How could these trends help influence Bellabeat marketing strategy?
+
+##Prepare
+*Data Source*
+*Kaggle open dataset called [FitBit Fitness Tracker Data](https://www.kaggle.com/datasets/arashnic/fitbit)
+
+*Containig 18.csv files in Long format of ABOUT 30 Fitbit users.
+
+*ROCCC*
+
+*Reliable: The data is not reliable as there are only 30 participants so it could be incomplete and biased.
+
+*Original: The data is not Original as its collected from third party data collector
+
+*Comprehensive: The usage of the product could be tracked with the data as it captures minute-level output for physical activity, heart rate, and sleep monitoring. But the small sample size is a questionable parameter.
+
+*Current: The data set was collected during the period 12th March 2016 – 12th May 2016. It is old and the output will vary if we collect it now.
+
+*Cited: Due to low credibility and high generality, it very difficult to have any business utility, though perfect for learning and education purposes so, it didn’t mentioned anywhere.
+
+*Data Cleaning*
+
+A primary look reveals :
+
+*data is too big for Excel, so using R.
+
+*OUT OF 18 CSV files, we need only to 6 files to answer our business questions.
+
+**loading packages**
+```{r}
+library(tidyverse)
+library(skimr)
+library(lubridate)
+library(janitor)
+library(here)
+library(readr)
+```
+since i have already installed the above packages so, avoid this time.
+
+*Import files*
+```{r}
+dailyActivity_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/dailyActivity_merged.csv")
+
+dailyCalories_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/dailyCalories_merged.csv")
+
+dailyIntensities_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/dailyIntensities_merged.csv")
+
+dailySteps_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/dailySteps_merged.csv")
+
+heartrate_seconds_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/heartrate_seconds_merged.csv")
+
+sleepDay_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/sleepDay_merged.csv")
+
+
+weightLogInfo_merged <- read_csv("Fitabase Data 4.12.16-5.12.16/weightLogInfo_merged.csv")
+
+
+```
+ 
+
+*knowing the data well*
+```{r}
+head(dailyActivity_merged)
+head(dailyCalories_merged)
+head(dailyIntensities_merged)
+head(dailySteps_merged)
+head(heartrate_seconds_merged)
+head(sleepDay_merged)
+head(weightLogInfo_merged)
+```
+
+##Process
+First we have a quick look using
+```{r}
+str(dailyActivity_merged)
+str(dailyCalories_merged)
+str(dailyIntensities_merged)
+str(dailySteps_merged)
+str(heartrate_seconds_merged)
+str(sleepDay_merged)
+str(weightLogInfo_merged)
+```
+from these two commands, we got to know that most of the date vector are defined wrong as 'CHARCTER', rather than 'DateStamp'
+
+*data in 'dailyIntensities' , 'dailyCalories' and 'dailySteps' have been collated in 'dailyActivity_merged' so from here on, we only work with 'dailyActivity_merged' dataset
+
+```{r}
+dailyActivity_merged$ActivityDate= as.Date(dailyActivity_merged$ActivityDate, format="%m/%d/%Y")
+sleepDay_merged$SleepDay= as.Date(sleepDay_merged$SleepDay, format="%m/%d/%Y")
+weightLogInfo_merged$Date= as.Date(weightLogInfo_merged$Date, format="%m/%d/%Y")
+heartrate_seconds_merged$Time= as.Date(heartrate_seconds_merged$Time, format="%m/%d/%Y")
+```
+
+*checking for any duplicates*
+```{r}
+sum(duplicated(dailyActivity_merged))
+sum(duplicated(sleepDay_merged))
+sum(duplicated(weightLogInfo_merged))
+sum(duplicated(heartrate_seconds_merged))
+```
+we found there are 3 duplicates in sleepDay_merged table. while, from this step, we can see how changing time column dtype results in too many duplicate value in heartrate_seconds_merged since we are left with only date, the only distincting feature(time along date) is gone.
+
+*view duplicates*
+```{r}
+sleepDay_merged[duplicated(sleepDay_merged),]
+```
+*removing them*..
+```{r}
+sleeping<- distinct(sleepDay_merged)
+```
+
+*no. of uniques users*
+```{r}
+n_distinct(dailyActivity_merged$Id)
+n_distinct(sleeping$Id)
+n_distinct(heartrate_seconds_merged$Id)
+n_distinct(weightLogInfo_merged$Id)
+```
+As it can be clear that both weight and heartrate have very little data (<50%), we cant include for further analysis.
+
+```{r}
+summary(dailyActivity_merged)
+summary(sleeping)
+summary(weightLogInfo_merged)
+```
+based upon this, we can write the descriptive stats about the data but this time, i refrain to do SO,
+
+```{r}
+is.na(weightLogInfo_merged)
+colSums(is.na(weightLogInfo_merged))
+which(colSums(is.na(weightLogInfo_merged))>0)
+names((which(colSums(is.na(weightLogInfo_merged))>0)))
+```
+*To remove NA value from weight table
+```{r}
+weightLogInfo_merged[is.na(weightLogInfo_merged)]<- 0
+```
+
+**DATA PROCESSING**
+
+New column for total minutes a user spend on daily
+```{r}
+dailyActivity_merged<- dailyActivity_merged %>% 
+  mutate(totalminutes=VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes) %>%   mutate(activeSum=VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes)
+
+```
+next, we can analyse the sleep data by categorising it 
+
+*Categorizing sleep types*
+
+```{r}
+sleep_categories<- sleeping %>% 
+  group_by(Id) %>% 
+  summarise(avg_asleep=mean(TotalMinutesAsleep))%>% 
+  mutate(sleeptype=case_when(avg_asleep < 300 ~ "Unhealthy sleep",
+    avg_asleep >=300 & avg_asleep <= 420 ~ "Average sleep",
+    avg_asleep > 420 ~ "Healthy sleep")) 
+head(sleep_categories)
+```
+*analysing user's sleep patterns  and heart rate conditions
+```{r}
+hrate=heartrate_seconds_merged %>% 
+  group_by(Id) %>% 
+  summarise(avg_Hrate=mean(Value))
+sleeping2=sleeping %>% 
+  mutate(actual_asleepRatio=TotalMinutesAsleep/TotalTimeInBed) %>% 
+  group_by(Id) %>% 
+  summarise(avg_Ratio=mean(actual_asleepRatio))
+hRatesRatio=merge(x=hrate,y=sleeping2,by="Id")
+
+head(hRatesRatio)
+```
+
+```{r}
+health= weightLogInfo_merged%>%
+group_by(Id) %>% 
+  summarise(avg_BMI=mean(BMI))%>% 
+  mutate(Bmi_status=case_when(avg_BMI< 18.5~ "Unweight",
+     avg_BMI>=18.5 & avg_BMI <= 24.9~ "normal weight",
+    avg_BMI >=25 & avg_BMI<=29.9 ~ "overweight",
+    avg_BMI>=30 ~ "obesity"
+    )) 
+act=dailyActivity_merged %>% 
+  group_by(Id) %>% 
+  summarise(activeRatio=VeryActiveMinutes/totalminutes)
+bmiXActive=merge(x=health,y=act,by="Id")
+bmiXActive[is.na(bmiXActive)]<- 0
+head(bmiXActive)
+```
+
+#DATA visz.
+we are using R for visualization purposes of our analysis.
+
+**plotting relationship bt. Total steps and calories**
+```{r}
+ggplot(dailyActivity_merged,aes(x= totalminutes,y=Calories))+geom_point(color="purple")+geom_smooth(method=lm)+labs(title = "work-out vs calories burned", x="Total Minutes walk-out", y="Calories")
+```
+
+
+```{r}
+ggplot(dailyActivity_merged,aes(x= TotalSteps,y=Calories))+geom_smooth(color="green")+geom_point(color="pink")+labs(title = "total steps VS calories burned", x="Total Steps", y="Calories")
+
+```
+```{r}
+par(mfrow=c(2,2)) 
+  ggplot(dailyActivity_merged,aes(x=TrackerDistance,fill="trackerdistance"))+geom_histogram(alpha=0.3,size=1) 
+  ggplot(dailyActivity_merged,aes(x=VeryActiveDistance))+geom_histogram(alpha=0.3,size=1)
+
+ggplot(dailyActivity_merged,aes(x=VeryActiveDistance,y=Calories))+geom_bin2d()
+
+```
+```{r}
+ggplot(data = sleep_categories) +
+  geom_bar(mapping = aes(x = sleeptype, fill = sleeptype)) +
+  labs(title = "Sleep Categories", x = "Sleep Types")
+```
+
+
+```{r}
+ggplot(hRatesRatio,aes(x=avg_Hrate,y=avg_Ratio))+geom_point(color="pink")+geom_line(color="blue")+geom_smooth(method=lm)+labs(title = "relation bt. sleep and heart rate",x="average heart rate per seconds",y="asleep_minutes/bed_time")
+```
+```{r warning=FALSE}
+  ggplot(bmiXActive, aes(x=activeRatio,y=avg_BMI,color=Bmi_status))+geom_point()+geom_smooth()+facet_wrap(~Bmi_status)
+```
+
+##Key Insights
+*Most of the people want less time to devout for workout as a result cover less distance overall  but we analysed the positive relation between time and calories burned.
+
+*Most of the population sleep well.
+
+* clearly evident,that above last two plots are not to be considered for generalizing the trends of the overall population because of not enough data in "FITbit" which lead to biasedness,low degree of freedom and lack of representation hence, we cant work over the insights these plots provides, even though seemed very important in explaining the trends of the smart devices.
+
+
+#RECOMMENDATIONS
+*The Bellabeat app should remind it’s users to exercise at frequent intervals and especially in the morning hours where there was seen to be low activity from the data and is also the best time for a gym session!
+
+*The app should give wellness tips on how to sleep better because from the data, sedentary times had a negative correlation with sleep times which may suggest that while users are inactive, they can’t also sleep.
+
+*The app should have a daily activity plan that can help improve sleeping patterns and times for its users. The data suggests inactivity does not equal proper rest/sleep.
